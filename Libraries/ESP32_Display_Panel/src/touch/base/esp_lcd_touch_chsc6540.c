@@ -20,15 +20,15 @@
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_touch.h"
 
-#include "esp_lcd_touch_cst816s.h"
+#include "esp_lcd_touch_chsc6540.h"
 
 #define POINT_NUM_MAX       (1)
 
-// #define DATA_START_REG      (0x02)
 #define DATA_START_REG      (0x00)
+
 #define CHIP_ID_REG         (0xA7)
 
-static const char *TAG = "CST816S";
+static const char *TAG = "CHSC6540";
 
 static esp_err_t read_data(esp_lcd_touch_handle_t tp);
 static bool get_xy(esp_lcd_touch_handle_t tp, uint16_t *x, uint16_t *y, uint16_t *strength, uint8_t *point_num, uint8_t max_point_num);
@@ -39,7 +39,7 @@ static esp_err_t i2c_read_bytes(esp_lcd_touch_handle_t tp, uint16_t reg, uint8_t
 static esp_err_t reset(esp_lcd_touch_handle_t tp);
 static esp_err_t read_id(esp_lcd_touch_handle_t tp);
 
-esp_err_t esp_lcd_touch_new_i2c_cst816s(const esp_lcd_panel_io_handle_t io, const esp_lcd_touch_config_t *config, esp_lcd_touch_handle_t *tp)
+esp_err_t esp_lcd_touch_new_i2c_chsc6540(const esp_lcd_panel_io_handle_t io, const esp_lcd_touch_config_t *config, esp_lcd_touch_handle_t *tp)
 {
     ESP_RETURN_ON_FALSE(io, ESP_ERR_INVALID_ARG, TAG, "Invalid io");
     ESP_RETURN_ON_FALSE(config, ESP_ERR_INVALID_ARG, TAG, "Invalid config");
@@ -49,55 +49,55 @@ esp_err_t esp_lcd_touch_new_i2c_cst816s(const esp_lcd_panel_io_handle_t io, cons
 
     /* Prepare main structure */
     esp_err_t ret = ESP_OK;
-    esp_lcd_touch_handle_t cst816s = calloc(1, sizeof(esp_lcd_touch_t));
-    ESP_GOTO_ON_FALSE(cst816s, ESP_ERR_NO_MEM, err, TAG, "Touch handle malloc failed");
+    esp_lcd_touch_handle_t chsc6540 = calloc(1, sizeof(esp_lcd_touch_t));
+    ESP_GOTO_ON_FALSE(chsc6540, ESP_ERR_NO_MEM, err, TAG, "Touch handle malloc failed");
 
     /* Communication interface */
-    cst816s->io = io;
+    chsc6540->io = io;
     /* Only supported callbacks are set */
-    cst816s->read_data = read_data;
-    cst816s->get_xy = get_xy;
-    cst816s->del = del;
+    chsc6540->read_data = read_data;
+    chsc6540->get_xy = get_xy;
+    chsc6540->del = del;
     /* Mutex */
-    cst816s->data.lock.owner = portMUX_FREE_VAL;
+    chsc6540->data.lock.owner = portMUX_FREE_VAL;
     /* Save config */
-    memcpy(&cst816s->config, config, sizeof(esp_lcd_touch_config_t));
+    memcpy(&chsc6540->config, config, sizeof(esp_lcd_touch_config_t));
 
     /* Prepare pin for touch interrupt */
-    if (cst816s->config.int_gpio_num != GPIO_NUM_NC) {
+    if (chsc6540->config.int_gpio_num != GPIO_NUM_NC) {
         const gpio_config_t int_gpio_config = {
             .mode = GPIO_MODE_INPUT,
-            .intr_type = (cst816s->config.levels.interrupt ? GPIO_INTR_POSEDGE : GPIO_INTR_NEGEDGE),
-            .pin_bit_mask = BIT64(cst816s->config.int_gpio_num)
+            .intr_type = (chsc6540->config.levels.interrupt ? GPIO_INTR_POSEDGE : GPIO_INTR_NEGEDGE),
+            .pin_bit_mask = BIT64(chsc6540->config.int_gpio_num)
         };
         ESP_GOTO_ON_ERROR(gpio_config(&int_gpio_config), err, TAG, "GPIO intr config failed");
 
         /* Register interrupt callback */
-        if (cst816s->config.interrupt_callback) {
-            esp_lcd_touch_register_interrupt_callback(cst816s, cst816s->config.interrupt_callback);
+        if (chsc6540->config.interrupt_callback) {
+            esp_lcd_touch_register_interrupt_callback(chsc6540, chsc6540->config.interrupt_callback);
         }
     }
     /* Prepare pin for touch controller reset */
-    if (cst816s->config.rst_gpio_num != GPIO_NUM_NC) {
+    if (chsc6540->config.rst_gpio_num != GPIO_NUM_NC) {
         const gpio_config_t rst_gpio_config = {
             .mode = GPIO_MODE_OUTPUT,
-            .pin_bit_mask = BIT64(cst816s->config.rst_gpio_num)
+            .pin_bit_mask = BIT64(chsc6540->config.rst_gpio_num)
         };
         ESP_GOTO_ON_ERROR(gpio_config(&rst_gpio_config), err, TAG, "GPIO reset config failed");
     }
     /* Reset controller */
-    ESP_GOTO_ON_ERROR(reset(cst816s), err, TAG, "Reset failed");
+    ESP_GOTO_ON_ERROR(reset(chsc6540), err, TAG, "Reset failed");
     /* Read product id */
-    ESP_GOTO_ON_ERROR(read_id(cst816s), err, TAG, "Read version failed");
-    *tp = cst816s;
+    // ESP_GOTO_ON_ERROR(read_id(chsc6540), err, TAG, "Read version failed");
+    *tp = chsc6540;
 
-    ESP_LOGI(TAG, "LCD touch panel create success, version: %d.%d.%d", ESP_LCD_TOUCH_CST816S_VER_MAJOR, ESP_LCD_TOUCH_CST816S_VER_MINOR,
-             ESP_LCD_TOUCH_CST816S_VER_PATCH);
+    ESP_LOGI(TAG, "LCD touch panel create success, version: %d.%d.%d", ESP_LCD_TOUCH_CHSC6540_VER_MAJOR, ESP_LCD_TOUCH_CHSC6540_VER_MINOR,
+             ESP_LCD_TOUCH_CHSC6540_VER_PATCH);
 
     return ESP_OK;
 err:
-    if (cst816s) {
-        del(cst816s);
+    if (chsc6540) {
+        del(chsc6540);
     }
     ESP_LOGE(TAG, "Initialization failed!");
     return ret;
@@ -116,43 +116,20 @@ static esp_err_t read_data(esp_lcd_touch_handle_t tp)
     } data_t;
 
     data_t point;
-    // ESP_RETURN_ON_ERROR(i2c_read_bytes(tp, DATA_START_REG, (uint8_t *)&point, sizeof(data_t)), TAG, "I2C read failed");
 
-    // portENTER_CRITICAL(&tp->data.lock);
-    // point.num = (point.num > POINT_NUM_MAX ? POINT_NUM_MAX : point.num);
-    // tp->data.points = point.num;
-    // /* Fill all coordinates */
-    // for (int i = 0; i < point.num; i++) {
-    //     tp->data.coords[i].x = point.x_h << 8 | point.x_l;
-    //     tp->data.coords[i].y = point.y_h << 8 | point.y_l;
-    // }
-    // portEXIT_CRITICAL(&tp->data.lock);
-
-    /*chsc6540*/
-    // uint8_t buf[15]={0};
-    // uint8_t touch_num=0;
-    // uint16_t x=0;
-    // uint16_t y=0;
-    // uint8_t  gc=0;//报点过程
-    //  ESP_RETURN_ON_ERROR(i2c_read_bytes(tp, DATA_START_REG, buf, sizeof(buf)), TAG, "I2C read failed");
-
-    // point.num=buf[2];
-
-    // gc=buf[3]>>4;
-
-    // x= (uint16_t)(((buf[3]&0x0F)<<8)+buf[4]);
-    // y= (uint16_t)(((buf[5]&0x0F)<<8)+buf[6]);
-
-    /*CST820 */
-    uint8_t lvalue[15]={0};
-    uint8_t gesture_id=0;
+    uint8_t buf[15]={0};
+    uint8_t touch_num=0;
     uint16_t x=0;
     uint16_t y=0;
-    ESP_RETURN_ON_ERROR(i2c_read_bytes(tp, DATA_START_REG, (uint8_t *)lvalue, sizeof(lvalue)), TAG, "I2C read failed");
-    gesture_id =  lvalue[1];
-    point.num  =lvalue[2];
-    x = (((uint16_t)(lvalue[3]&0x0f))<<8) | lvalue[4];
-    y = (((uint16_t)(lvalue[5]&0x0f))<<8) | lvalue[6];
+    uint8_t  gc=0;//报点过程
+     ESP_RETURN_ON_ERROR(i2c_read_bytes(tp, DATA_START_REG, buf, sizeof(buf)), TAG, "I2C read failed");
+
+    point.num=buf[2];
+
+    gc=buf[3]>>4;
+
+    x= (uint16_t)(((buf[3]&0x0F)<<8)+buf[4]);
+    y= (uint16_t)(((buf[5]&0x0F)<<8)+buf[6]);
 
 
     portENTER_CRITICAL(&tp->data.lock);

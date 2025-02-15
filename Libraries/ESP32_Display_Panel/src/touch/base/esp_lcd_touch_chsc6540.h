@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText: 2023 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
  * @file
- * @brief ESP LCD touch: CST816S
+ * @brief ESP LCD touch: CHSC6540
  */
 
 #pragma once
@@ -17,12 +17,12 @@
 extern "C" {
 #endif
 
-#define ESP_LCD_TOUCH_CST816S_VER_MAJOR    (1)
-#define ESP_LCD_TOUCH_CST816S_VER_MINOR    (0)
-#define ESP_LCD_TOUCH_CST816S_VER_PATCH    (3)
+#define ESP_LCD_TOUCH_CHSC6540_VER_MAJOR    (1)
+#define ESP_LCD_TOUCH_CHSC6540_VER_MINOR    (0)
+#define ESP_LCD_TOUCH_CHSC6540_VER_PATCH    (0)
 
 /**
- * @brief Create a new CST816S touch driver
+ * @brief Create a new CHSC6540 touch driver
  *
  * @note  The I2C communication should be initialized before use this function.
  *
@@ -32,24 +32,20 @@ extern "C" {
  * @return
  *      - ESP_OK: on success
  */
-esp_err_t esp_lcd_touch_new_i2c_cst816s(const esp_lcd_panel_io_handle_t io, const esp_lcd_touch_config_t *config, esp_lcd_touch_handle_t *tp);
+esp_err_t esp_lcd_touch_new_i2c_chsc6540(const esp_lcd_panel_io_handle_t io, const esp_lcd_touch_config_t *config, esp_lcd_touch_handle_t *tp);
 
 /**
- * @brief I2C address of the CST816S controller
+ * @brief I2C address of the CHSC6540 controller
  *
  */
-/*cst816s/cst820*/
-#define ESP_LCD_TOUCH_IO_I2C_CST816S_ADDRESS    (0x15)
-/*chsc6540*/
-// #define ESP_LCD_TOUCH_IO_I2C_CST816S_ADDRESS    (0x2E)
-
+#define ESP_LCD_TOUCH_IO_I2C_CHSC6540_ADDRESS    (0x2E)
 /**
  * @brief Touch IO configuration structure
  *
  */
-#define ESP_LCD_TOUCH_IO_I2C_CST816S_CONFIG()             \
+#define ESP_LCD_TOUCH_IO_I2C_CHSC6540_CONFIG()             \
     {                                                    \
-        .dev_addr = ESP_LCD_TOUCH_IO_I2C_CST816S_ADDRESS, \
+        .dev_addr = ESP_LCD_TOUCH_IO_I2C_CHSC6540_ADDRESS, \
         .control_phase_bytes = 1,                        \
         .dc_bit_offset = 0,                              \
         .lcd_cmd_bits = 8,                              \
