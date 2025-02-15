@@ -1,5 +1,29 @@
 # ChangeLog
 
+## v1.1.0 - 2025-02-07
+
+### Enhancements:
+
+* feat(repo): add legacy header files to maintain compatibility
+* feat(repo): update with esp-lib-utils v0.2.*
+
+## v1.0.1 - 2025-01-23
+
+### Enhancements:
+
+* feat(base): update base class
+
+### Bug Fixes:
+
+* fix(repo): compile *.cpp files on MicroPython
+
+## v1.0.0 - 2024-12-06
+
+### Enhancements:
+
+* feat(repo): refactor with esp-lib-utils
+* feat(repo): support micropython
+
 ## v0.1.0 - 2024-11-05
 
 ### Enhancements:
