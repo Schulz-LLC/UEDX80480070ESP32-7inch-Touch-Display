@@ -38,10 +38,7 @@ esp_err_t esp_lcd_touch_new_i2c_cst816s(const esp_lcd_panel_io_handle_t io, cons
  * @brief I2C address of the CST816S controller
  *
  */
-/*cst816s/cst820*/
 #define ESP_LCD_TOUCH_IO_I2C_CST816S_ADDRESS    (0x15)
-/*chsc6540*/
-// #define ESP_LCD_TOUCH_IO_I2C_CST816S_ADDRESS    (0x2E)
 
 /**
  * @brief Touch IO configuration structure
